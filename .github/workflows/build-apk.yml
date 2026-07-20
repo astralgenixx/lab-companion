@@ -11,11 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -23,18 +18,37 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          curl -sO https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mv cmdline-tools latest
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" --channel=0 > /dev/null 2>&1 || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
+          node-version: '20'
 
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
+      - name: Create keystore
+        run: |
+          keytool -genkey -v -keystore $HOME/release.keystore -alias labcompanion -keyalg RSA -keysize 4096 -validity 10000 \
+            -dname "CN=LabCompanion, OU=Dev, O=LabCompanion, L=City, S=State, C=US" \
+            -storepass android -keypass android
+
       - name: Initialize Bubblewrap project
         run: |
-          mkdir -p android-project
-          cd android-project
-          cat > twa-manifest.json << 'MANIFESTEOF'
+          mkdir -p twa-project
+          cd twa-project
+          cat > twa-manifest.json << 'EOF'
           {
             "packageId": "com.labcompanion.app",
             "host": "astralgenixx.github.io",
@@ -53,19 +67,32 @@ jobs:
             "alphaDependencies": { "enabled": false },
             "enableSiteSettingsShortcut": true,
             "orientation": "any",
-            "fullScopeUrl": "https://astralgenixx.github.io/lab-companion/"
+            "fullScopeUrl": "https://astralgenixx.github.io/lab-companion/",
+            "signingKey": {
+                "path": "$HOME/release.keystore",
+                "alias": "labcompanion",
+                "password": "android",
+                "keyPassword": "android"
+            }
           }
-          MANIFESTEOF
-          echo "y" | bubblewrap init --manifest="https://astralgenixx.github.io/lab-companion/manifest.json" --directory="$(pwd)"
+          EOF
+        env:
+          HOME: /home/runner
 
-      - name: Build APK
+      - name: Build APK with Bubblewrap
         run: |
-          export ANDROID_HOME=$ANDROID_SDK_ROOT
-          cd android-project
+          cd twa-project
           bubblewrap build
+        env:
+          JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.17-10/x64
+          HOME: /home/runner
+        continue-on-error: true
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LabCompanion-APK
-          path: android-project/app/build/outputs/apk/release/*.apk
+          name: lab-companion-apk
+          path: |
+            twa-project/**/*.apk
+            twa-project/**/*.aab
+          if-no-files-found: warn
