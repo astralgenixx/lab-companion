@@ -1,0 +1,18 @@
+(function () {
+  'use strict';
+  LC.registerView('gel', function () {
+    const root = document.createElement('div');
+    root.innerHTML = `<div class="view-header"><h1 class="view-title">⚡ Gel Electrophoresis</h1><p class="view-subtitle">Agarose gel percentage, running conditions, DNA ladder reference.</p></div>
+      <div class="card"><div class="card-sub">Optimal agarose gel % for DNA fragment separation.</div><div class="grid grid-2"><div><div class="field"><label class="label">DNA size (bp)</label><input class="input" id="gSize" type="number" value="1000" /></div><div class="result highlight" id="gRes">—</div><div class="field" style="margin-top:8px;"><label class="label">Voltage</label><div class="input-with-suffix"><input class="input" id="gV" type="number" value="100" /><span class="suffix">V</span></div></div><div class="field"><label class="label">Gel length (cm)</label><div class="input-with-suffix"><input class="input" id="gLen" type="number" value="10" /><span class="suffix">cm</span></div></div><div class="result" id="gTime"></div></div><div><div class="card-title">Reference: Agarose Gel %</div><div class="table-wrap"><table class="table"><thead><tr><th>% Agarose</th><th>Separation range</th></tr></thead><tbody><tr><td class="mono">0.5%</td><td class="mono">1 – 30 kb</td></tr><tr><td class="mono">0.7%</td><td class="mono">0.8 – 12 kb</td></tr><tr><td class="mono">1.0%</td><td class="mono">0.5 – 10 kb</td></tr><tr><td class="mono">1.2%</td><td class="mono">0.4 – 7 kb</td></tr><tr><td class="mono">1.5%</td><td class="mono">0.2 – 3 kb</td></tr><tr><td class="mono">2.0%</td><td class="mono">0.1 – 2 kb</td></tr><tr><td class="mono">3.0%</td><td class="mono">50 – 1000 bp</td></tr></tbody></table></div></div></div></div>
+      <div class="card"><div class="card-title">DNA Ladder Reference</div><div class="card-sub">Typical 1 kb ladder bands. Distances in 1% gel @ 5 V/cm.<br><em>Note: Actual distances vary with % agarose and run time.</em></div><div class="table-wrap"><table class="table"><thead><tr><th>Size</th><th>Approx. migration</th></tr></thead><tbody>${LC_DATA.dnaLadder.map(d => `<tr><td class="mono">${d.label}</td><td class="mono">${d.bp} bp</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="card"><div class="card-title">Quick timer</div><div class="input-group"><input class="input" id="glH" type="number" value="0" min="0" /><input class="input" id="glM" type="number" value="45" min="0" /><button class="btn btn-primary" id="glGo">Start gel run timer</button></div><div class="card-sub">hours · minutes</div></div>`;
+    const $ = id => root.querySelector('#' + id);
+    const calcG = () => { const s = +$('gSize').value; let pct='1.0%', note=''; if(s>30000) pct='0.3–0.5%'; else if(s>12000) pct='0.5%'; else if(s>10000) pct='0.7%'; else if(s>7000) pct='0.8%'; else if(s>5000) pct='0.8–1.0%'; else if(s>3000) pct='1.0%'; else if(s>2000) pct='1.2%'; else if(s>1000) pct='1.5%'; else if(s>500) pct='2.0%'; else pct='2.5–3.0%'; $('gRes').innerHTML=`Use <strong>${pct}</strong> agarose gel.`; };
+    const calcT = () => { const v=+$('gV').value,l=+$('gLen').value; if(!v||!l) return; const vcm=v/l; const t=5/vcm*300; $('gTime').innerHTML=`<strong>${vcm.toFixed(1)} V/cm</strong>. Estimated run: <strong>${Math.round(t)} min</strong> (bromophenol blue reaches end).`; };
+    $('gSize').addEventListener('input',calcG);
+    ['gV','gLen'].forEach(id => $(id).addEventListener('input',calcT));
+    calcG(); calcT();
+    $('glGo').addEventListener('click',()=>{const h=+$('glH').value||0,m=+$('glM').value||0;const s=h*3600+m*60;if(s<=0)return;LC.addTimer('Gel run',s);LC.toast('Gel run timer started','success');LC.navigate('timers');});
+    return root;
+  });
+})();

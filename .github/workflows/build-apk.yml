@@ -1,0 +1,71 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Initialize Bubblewrap project
+        run: |
+          mkdir -p android-project
+          cd android-project
+          cat > twa-manifest.json << 'MANIFESTEOF'
+          {
+            "packageId": "com.labcompanion.app",
+            "host": "astralgenixx.github.io",
+            "name": "Lab Companion",
+            "launcherName": "Lab Companion",
+            "display": "standalone",
+            "themeColor": "#0d9488",
+            "backgroundColor": "#0b1220",
+            "startUrl": "/lab-companion/",
+            "iconUrl": "https://astralgenixx.github.io/lab-companion/icons/icon-512.png",
+            "maskableIconUrl": "https://astralgenixx.github.io/lab-companion/icons/icon-512.png",
+            "shortcuts": [],
+            "webManifestUrl": "https://astralgenixx.github.io/lab-companion/manifest.json",
+            "fallbackType": "customtabs",
+            "features": { "locationDelegation": { "enabled": true } },
+            "alphaDependencies": { "enabled": false },
+            "enableSiteSettingsShortcut": true,
+            "orientation": "any",
+            "fullScopeUrl": "https://astralgenixx.github.io/lab-companion/"
+          }
+          MANIFESTEOF
+          echo "y" | bubblewrap init --manifest="https://astralgenixx.github.io/lab-companion/manifest.json" --directory="$(pwd)"
+
+      - name: Build APK
+        run: |
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          cd android-project
+          bubblewrap build
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabCompanion-APK
+          path: android-project/app/build/outputs/apk/release/*.apk

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Lab Companion — Cancer Biology Toolkit</title>
+  <meta name="description" content="Pocket toolkit for cancer biology researchers — timers, calculators, Western blots, gel electrophoresis, cell culture, ICC/IHC.">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Lab Companion">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Install prompt -->
+  <div id="installBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:var(--bg-elev); border-top:1px solid var(--border); padding:12px 16px; z-index:200; display:none; align-items:center; gap:12px; box-shadow:0 -4px 20px rgba(0,0,0,0.15);">
+    <img src="icons/icon-192.png" width="40" height="40" style="border-radius:10px;" alt="">
+    <div style="flex:1;">
+      <div style="font-weight:700; font-size:13px;">Install Lab Companion</div>
+      <div style="font-size:11px; color:var(--text-muted);">Add to home screen for quick access</div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="installBtn">Install</button>
+    <button class="btn btn-ghost btn-sm" id="installDismiss">✕</button>
+  </div>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+    <div class="brand">
+      <div class="brand-mark">🧪</div>
+      <div>
+        <div class="brand-name">Lab Companion</div>
+        <div class="brand-sub">Cancer Biology</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="active-timer-pill" id="activeTimerPill" hidden>
+        <div class="dot"></div>
+        <span id="activeTimerLabel"></span>
+      </div>
+      <div>
+        <div class="topbar-clock" id="topbarClock">--:--:--</div>
+        <div class="topbar-date" id="topbarDate">---</div>
+      </div>
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="nav">
+      <a class="nav-item active" data-view="dashboard"><span class="nav-icon">🏠</span> Dashboard</a>
+      <div class="nav-section">Timing</div>
+      <a class="nav-item" data-view="timers"><span class="nav-icon">⏱️</span> Timers</a>
+      <a class="nav-item" data-view="stopwatch"><span class="nav-icon">⏲️</span> Stopwatch</a>
+      <a class="nav-item" data-view="clock"><span class="nav-icon">🕐</span> World Clock</a>
+      <div class="nav-section">Calculators</div>
+      <a class="nav-item" data-view="calc-molarity"><span class="nav-icon">🧪</span> Molarity</a>
+      <a class="nav-item" data-view="calc-dilution"><span class="nav-icon">💧</span> Dilution</a>
+      <a class="nav-item" data-view="calc-centrifuge"><span class="nav-icon">🌀</span> Centrifuge</a>
+      <a class="nav-item" data-view="calc-concentration"><span class="nav-icon">📈</span> Concentration</a>
+      <a class="nav-item" data-view="calc-cellcount"><span class="nav-icon">🔢</span> Cell Count</a>
+      <a class="nav-item" data-view="calc-units"><span class="nav-icon">📏</span> Unit Converter</a>
+      <a class="nav-item" data-view="calc-ic50"><span class="nav-icon">📉</span> IC50 / Dose-Response</a>
+      <a class="nav-item" data-view="calc-proteinmw"><span class="nav-icon">🧬</span> Protein MW & Tools</a>
+      <div class="nav-section">Experiments</div>
+      <a class="nav-item" data-view="western"><span class="nav-icon">🧫</span> Western Blot</a>
+      <a class="nav-item" data-view="gel"><span class="nav-icon">⚡</span> Gel Electrophoresis</a>
+      <a class="nav-item" data-view="cellculture"><span class="nav-icon">🦠</span> Cell Culture</a>
+      <a class="nav-item" data-view="icc"><span class="nav-icon">🎨</span> ICC / IHC</a>
+      <a class="nav-item" data-view="pcr"><span class="nav-icon">🧬</span> PCR / qPCR</a>
+      <div class="nav-section">Tools & Databases</div>
+      <a class="nav-item" data-view="drugs"><span class="nav-icon">💊</span> Drugs & Inhibitors</a>
+      <a class="nav-item" data-view="protocols"><span class="nav-icon">📋</span> Protocol Library</a>
+      <a class="nav-item" data-view="growth"><span class="nav-icon">📊</span> Growth Curves</a>
+      <a class="nav-item" data-view="transfection"><span class="nav-icon">💉</span> Transfection</a>
+      <div class="nav-section">Reference</div>
+      <a class="nav-item" data-view="recipes"><span class="nav-icon">📖</span> Buffer Recipes</a>
+      <a class="nav-item" data-view="celllines"><span class="nav-icon">🗂️</span> Cell Line DB</a>
+      <div class="nav-section">Lab Management</div>
+      <a class="nav-item" data-view="notebook"><span class="nav-icon">📓</span> Notebook</a>
+      <a class="nav-item" data-view="inventory"><span class="nav-icon">📦</span> Inventory</a>
+      <a class="nav-item" data-view="tasks"><span class="nav-icon">✅</span> Tasks</a>
+      <div class="nav-section">App</div>
+      <a class="nav-item" data-view="settings"><span class="nav-icon">⚙️</span> Settings</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main" id="mainView"></main>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/data/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/timers.js"></script>
+  <script src="js/views/clock.js"></script>
+  <script src="js/views/calculators.js"></script>
+  <script src="js/views/western.js"></script>
+  <script src="js/views/gel.js"></script>
+  <script src="js/views/cellculture.js"></script>
+  <script src="js/views/icc.js"></script>
+  <script src="js/views/pcr.js"></script>
+  <script src="js/views/recipes.js"></script>
+  <script src="js/views/celllines.js"></script>
+  <script src="js/views/inventory.js"></script>
+  <script src="js/views/notebook.js"></script>
+  <script src="js/views/tasks.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/views/drugs.js"></script>
+  <script src="js/views/protocols.js"></script>
+  <script src="js/views/growth.js"></script>
+  <script src="js/views/transfection.js"></script>
+
+  <!-- PWA: Service worker + install prompt -->
+  <script>
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    var banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'flex';
+  });
+  document.getElementById('installBtn').addEventListener('click', function() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(r) {
+        document.getElementById('installBanner').style.display = 'none';
+        deferredPrompt = null;
+      });
+    } else {
+      document.getElementById('installBanner').style.display = 'none';
+    }
+  });
+  document.getElementById('installDismiss').addEventListener('click', function() {
+    document.getElementById('installBanner').style.display = 'none';
+  });
+  window.addEventListener('appinstalled', function() {
+    document.getElementById('installBanner').style.display = 'none';
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+  }
+  </script>
+</body>
+</html>

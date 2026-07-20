@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+js/.DS_Store
+_screenshots/
+*.log
+apk/
+twa-manifest.json
